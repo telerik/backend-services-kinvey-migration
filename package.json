@@ -1,0 +1,30 @@
+{
+  "name": "KinveyMigrationTool",
+  "description": "Tool for migrating from Telerik Platform to Kinvey",
+  "author": "Telerik Platform",
+  "homepage": "https://platform.telerik.com",
+  "version": "1.0.0",
+  "dependencies": {
+    "async": "*",
+    "async-p": "^1.1.0",
+    "bluebird": "^3.5.1",
+    "everlive-sdk": "*",
+    "kinvey-node-sdk": "3.8.1",
+    "prompt": "^1.0.0",
+    "request": "^2.83.0",
+    "request-promise-native": "^1.0.5",
+    "underscore": "*",
+    "winston": "^2.4.0"
+  },
+  "engines": {
+    "node": ">=6.0.0"
+  },
+  "private": true,
+  "main": "index.js",
+  "devDependencies": {
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0"
+  },
+  "repository": "",
+  "license": "Telerik"
+}

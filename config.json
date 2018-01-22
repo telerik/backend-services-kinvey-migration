@@ -1,0 +1,11 @@
+{
+  "kinvey_api_host": "https://baas.kinvey.com",
+  "kinvey_manage_host": "https://manage.kinvey.com",
+  "kinvey_kid": "",
+  "kinvey_app_secret": "",
+  "kinvey_master_secret": "",
+  "kinvey_token": "",
+  
+  "bs_app_id": "",
+  "bs_master_key": ""
+}
