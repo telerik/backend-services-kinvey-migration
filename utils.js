@@ -68,7 +68,7 @@ Utils.authenticateUser = function (logger, config) {
                 return Utils.updateConfigToken(result.token, logger, config);
             })
             .then(() => {
-                logger.info('Successfully configured Kinvey authentication.');
+                logger.info('Successfully configured Kinvey management authentication.');
             })
             .catch((authenticationError) => {
                 logger.error('Initialization was not successful. An error occured while authenticating to Kinvey: ' + authenticationError.message);

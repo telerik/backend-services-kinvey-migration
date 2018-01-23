@@ -54,7 +54,11 @@ if (operation === '--login') {
         const configurationMigrator = new ConfigurationMigrator(logger, config);
         configurationMigrator.cleanupDestinationApp();
     } else {
-        logger.warn('Unrecognized command.');
+        logger.warn('Unrecognized command.' +
+            '\n\nValid options are:' +
+            '\n  --login - Initializes the Kinvey management authentication' +
+            '\n  --migrate-config - Migrates the backend configuration of the app specified in config.json file' +
+            '\n  --migrate-data - Migrates the data of the app specified in config.json file');
     }
 }
 
