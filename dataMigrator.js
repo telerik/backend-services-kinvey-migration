@@ -24,7 +24,16 @@ class DataMigrator {
         let typesMetaData;
         let kinveyRoles = {};
         let bsRoles = {};
-        return this.backendServicesApi.getTypes()
+        return new Promise((resolve, reject) => {resolve()})
+            .then(() => {
+                return utils.checkConfiguration(this.logger, this.config);
+            })
+            .then(() => {
+                return this.kinveyServiceApi.checkManagementAuthorization();
+            })
+            .then(() => {
+                return this.backendServicesApi.getTypes();
+            })
             .then((types) => {
                 typesMetaData = types.Result;
                 return this.backendServicesApi.getGeoLocationFields(typesMetaData);
