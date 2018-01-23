@@ -46,7 +46,6 @@ class DataMigrator {
                 roles.forEach((role) => {
                     kinveyRoles[role.name] = role._id;
                 });
-                return Promise.resolve();
                 return this._migrateTypes(typesMetaData, kinveyRoles, bsRoles);
             })
             .then(() => {

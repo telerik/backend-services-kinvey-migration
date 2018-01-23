@@ -17,6 +17,9 @@ class ConfigurationMigrator {
     migrateConfiguration() {
         new Promise((resolve, reject) => {resolve()})
             .then(() => {
+                return utils.checkConfiguration(this.logger, this.config);
+            })
+            .then(() => {
                 return this.kinveyServiceApi.checkManagementAuthorization();
             })
             .then(() => {

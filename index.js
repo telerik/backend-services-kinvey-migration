@@ -32,33 +32,32 @@ try {
     console.error(new Error(err));
 }
 
-//Do not change those values. If you set them too high your API access will be automatically disabled.
-config.page_size_files = 50;
-config.page_size_data = 500;
-config.page_size_users = 50;
-config.max_parallel_requests = 10;
-
-config.bs_host = 'api.everlive.com';
-
 const operation = process.argv.slice(2, 3).toString();
 
-if (operation === '--migrate-config') {
-    const configurationMigrator = new ConfigurationMigrator(logger, config);
-    configurationMigrator.migrateConfiguration();
-
-} else if (operation === '--migrate-data') {
-    const dataMigrator = new DataMigrator(logger, config);
-    dataMigrator.migrateDataContent();
-
-} else if (operation === '--cleanup-dest') {
-    const configurationMigrator = new ConfigurationMigrator(logger, config);
-    configurationMigrator.cleanupDestinationApp();
-
-} else if (operation === '--login') {
+if (operation === '--login') {
     utils.authenticateUser(logger, config);
 } else {
-    logger.warn('Unrecognized command.');
+    //Do not change those values. If you set them too high your API access will be automatically disabled.
+    config.page_size_files = 50;
+    config.page_size_data = 500;
+    config.page_size_users = 50;
+    config.max_parallel_requests = 10;
+    config.bs_host = 'api.everlive.com';
+
+    if (operation === '--migrate-config') {
+        const configurationMigrator = new ConfigurationMigrator(logger, config);
+        configurationMigrator.migrateConfiguration();
+    } else if (operation === '--migrate-data') {
+        const dataMigrator = new DataMigrator(logger, config);
+        dataMigrator.migrateDataContent();
+    } else if (operation === '--cleanup-dest') {
+        const configurationMigrator = new ConfigurationMigrator(logger, config);
+        configurationMigrator.cleanupDestinationApp();
+    } else {
+        logger.warn('Unrecognized command.');
+    }
 }
+
 
 
 

@@ -37,7 +37,7 @@ Utils.authenticateUser = function (logger, config) {
     const schema = {
         properties: {
             name: {
-                message: 'Enter your Kinvey Username',
+                message: 'Enter your Kinvey username',
                 required: true
             },
             password: {
@@ -68,10 +68,10 @@ Utils.authenticateUser = function (logger, config) {
                 return Utils.updateConfigToken(result.token, logger, config);
             })
             .then(() => {
-                logger.info('Successfully configured Migration tool');
+                logger.info('Successfully configured Kinvey authentication.');
             })
             .catch((authenticationError) => {
-                logger.error(authenticationError);
+                logger.error('Initialization was not successful. An error occured while authenticating to Kinvey: ' + authenticationError.message);
             });
     });
 };
@@ -88,6 +88,14 @@ Utils.updateConfigToken = function (token, logger, config) {
             logger.error(updateConfigError);
             return Promise.reject(updateConfigError);
         });
+};
+
+Utils.checkConfiguration = function(logger, config) {
+    if (!config.bs_app_id || !config.bs_master_key || !config.kinvey_kid || !config.kinvey_master_secret || !config.kinvey_app_secret || !config.kinvey_manage_host || !config.kinvey_api_host) {
+        return Promise.reject(new Error('Configuration not initialized properly. You must initialize the config.json file before running the migration.'));
+    } else {
+        return Promise.resolve();
+    }
 };
 
 module.exports = Utils;

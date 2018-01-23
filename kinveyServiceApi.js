@@ -109,6 +109,11 @@ class KinveyServiceApi {
 
     checkManagementAuthorization() {
         const self = this;
+
+        if (!self.config.kinvey_token) {
+            throw new Error('Kinvey management access not initialized. Run using --login and then try again.');
+        }
+
         const requestUrl = `${self.config.kinvey_manage_host}/v2/environments/${self.config.kinvey_kid}/collections`;
         const headers = {
             'Content-Type': 'application/json',
@@ -124,10 +129,10 @@ class KinveyServiceApi {
         return utils.makeRequest(options)
         .catch((error) => {
             if (error.statusCode === 401) {
-                self.logger.error('Invalid authentication to Kinvey management API. Authenticate using --login and then try again.');
+                throw new Error('Invalid authentication to Kinvey management API. Authenticate using --login and then try again.');
+            } else {
+                throw error;
             }
-
-            throw error;
         });
     }
 
