@@ -29,7 +29,9 @@ Utils.resolveAllPromises = function (promises) {
 };
 
 Utils.convertCollectionNameToKinvey = function (collectionName) {
-    return collectionName.replace(/([^a-z0-9\-]+)/gi, '-');
+    var changedName = collectionName.replace(/([^a-z0-9\-]+)/gi, '-');
+    var newCollectionName = changedName.replace(/(^group$)/i, 'Group-1');
+    return newCollectionName;
 };
 
 Utils.authenticateUser = function (logger, config) {
