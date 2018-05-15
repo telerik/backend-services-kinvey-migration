@@ -515,7 +515,7 @@ class KinveyServiceApi {
         let roleName = bsRoles[userItem.Role];
         let kinveyRoleId = kinveyRoles[roleName];
         if (!kinveyRoleId) {
-            self.logger.warn(`\tUnable to migrate role for user with ID '${userItem.Id}'. Role not found in Kinvey: ${roleName}`);
+            this.logger.warn(`\tUnable to migrate role for user with ID '${userItem.Id}'. Role not found in Kinvey: ${roleName}`);
         } else {
             newItem._kmd.roles = [
                 {

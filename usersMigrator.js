@@ -72,7 +72,7 @@ class UserMigrator {
                             if (error) {
                                 reject(error);
                             } else {
-                                this.logger.info(`\tUser migration completed. Users migrated: ${copiedUsersCount}`);
+                                self.logger.info(`\tUser migration completed. Users migrated: ${copiedUsersCount}`);
                                 resolve();
                             }
                         }
