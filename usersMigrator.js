@@ -47,6 +47,8 @@ class UserMigrator {
                                 .then((users) => {
                                     fetchedUsersCount = users.length;
                                       users.forEach(function(item) {
+                                        delete item.Password;
+                                        delete item.PasswordSalt;
                                       dataArray.push(item);
                                     });
                                 })
