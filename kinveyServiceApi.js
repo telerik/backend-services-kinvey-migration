@@ -5,6 +5,7 @@ const asyncp = require('async-p');
 const async = require('async');
 const _ = require('underscore');
 const Promise = require('bluebird');
+const config = require('./config');
 
 const utils = require('./utils');
 
@@ -21,16 +22,6 @@ class KinveyServiceApi {
             'post-fetch': 'onPostFetch',
             'post-delete': 'onPostDelete'
         };
-
-        try {
-            Kinvey.init({
-                appKey: this.config.kinvey_kid,
-                appSecret: this.config.kinvey_app_secret,
-                masterSecret: this.config.kinvey_master_secret
-            });
-        } catch (error) {
-            throw error;
-        }
     }
 
     createCustomEndpoints(cloudFunctions) {
@@ -40,32 +31,8 @@ class KinveyServiceApi {
             cloudFunctions,
             function (cloudFunction) {
                 self.logger.info(`\tMigrating cloud function '${cloudFunction.name}'`);
-
-                const requestUrl = `${self.config.kinvey_manage_host}/v2/environments/${self.config.kinvey_kid}/business-logic/endpoints`;
-
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': self.config.kinvey_token
-                };
-
-                const options = {
-                    method: 'POST',
-                    uri: requestUrl,
-                    json: true,
-                    headers: headers
-                };
-
-                const payload = {
-                    name: cloudFunction.name,
-                    code: cloudFunction.code
-                };
-                options.body = payload;
-
-                return utils.makeRequest(options)
-                    .catch((error) => {
-                        self.logger.warn(`\t\tUnable to create custom endpoint '${cloudFunction.name}'. Error: ${error}`);
-                        Promise.resolve();
-                    });
+                utils.storeCloudFunction(config.bs_app_id, cloudFunction.name, cloudFunction.code);
+                return Promise.resolve();
             }
         );
 
@@ -73,6 +40,7 @@ class KinveyServiceApi {
 
     createCollections(types) {
         const self = this;
+
         const requestUrl = `${self.config.kinvey_manage_host}/v2/environments/${self.config.kinvey_kid}/collections`;
         const headers = {
             'Content-Type': 'application/json',
@@ -249,36 +217,15 @@ class KinveyServiceApi {
 
     _createCollectionHooks(collectionName, hooksToCreate, hooksCode) {
         const self = this;
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': self.config.kinvey_token
-        };
-
-        if (collectionName === 'Users') {
-            collectionName = 'user';
-        }
 
         return asyncp.eachSeries(
             hooksToCreate,
             function (hook) {
-                const requestUrl = `${self.config.kinvey_manage_host}/v2/environments/${self.config.kinvey_kid}/business-logic/collections/${collectionName}/${hook}`;
-                const hookTemplate = self._renderDefaultHookTemplate(hook);
-                const payload = {
-                    code: `${hookTemplate}${hooksCode}`,
-                    name: self._getHookMainFunctionName(hook)
-                };
-
                 self.logger.info(`    Creating hook: ${hook}...`);
 
-                const options = {
-                    method: 'PUT',
-                    uri: requestUrl,
-                    json: true,
-                    headers: headers,
-                    body: payload
-                };
+                utils.storeHook(config.bs_app_id, collectionName, self._getHookMainFunctionName(hook), hooksCode);
 
-                return utils.makeRequest(options);
+                return Promise.resolve();
             }
         );
     }
@@ -322,9 +269,7 @@ class KinveyServiceApi {
             (item, callback) => {
                 let responseStream;
 
-                //TODO: optimize if the file already exists in Kinvey
-
-                self.logger.info('\tUploading file: ' + item.Filename + ' (' + (item.Length / 1024) + ' KB)');
+                self.logger.info('\Downloading file: ' + item.Filename + ' (' + (item.Length / 1024) + ' KB)');
 
                 async.series([
                         (cb1) => {
@@ -345,13 +290,11 @@ class KinveyServiceApi {
                         },
                         (cb2) => {
                             item = self._transformFileItemToKinvey(item);
-                            Kinvey.Files.upload(responseStream, item)
-                                .then(() => {
-                                    cb2();
-                                })
-                                .catch((uploadFilesError) => {
-                                    cb2(uploadFilesError);
-                                });
+                            utils.storeFile(item.filename, responseStream);
+
+                            responseStream.on('end', () => {
+                              cb2();
+                            });
                         }
                     ],
                     callback

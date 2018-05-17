@@ -2,6 +2,7 @@ const request = require('request-promise-native');
 const prompt = require('prompt');
 const Promise = require('bluebird');
 const fs = Promise.promisifyAll(require('fs'));
+const path = require('path');
 
 function Utils() {
 }
@@ -93,11 +94,60 @@ Utils.updateConfigToken = function (token, logger, config) {
 };
 
 Utils.checkConfiguration = function(logger, config) {
-    if (!config.bs_app_id || !config.bs_master_key || !config.kinvey_kid || !config.kinvey_master_secret || !config.kinvey_app_secret || !config.kinvey_manage_host || !config.kinvey_api_host) {
+    if (!config.bs_app_id || !config.bs_master_key) {
         return Promise.reject(new Error('Configuration not initialized properly. You must initialize the config.json file before running the migration.'));
     } else {
         return Promise.resolve();
     }
 };
+
+Utils.storeCloudFunction = function(appId, functionName, code) {
+  let dirname = path.join(process.cwd(), appId, 'bl', 'functions');
+  let filename = path.join(dirname, functionName + '.js');
+  this.mkdirp(filename);
+  fs.writeFileSync(filename, code);
+};
+
+Utils.storeHook = function(appId, typeName, code) {
+  let dirname = path.join(process.cwd(), appId, 'bl', 'hooks');
+  let filename = path.join(dirname, typeName + '.js');
+  this.mkdirp(filename);
+  fs.writeFileSync(filename, code);
+};
+
+Utils.storeMetadataCollection = function(appId, collectionName, data) {
+  let dirname = path.join(process.cwd(), appId, 'metadata');
+  let filename = path.join(dirname, collectionName + '.json');
+  this.mkdirp(filename);
+  fs.writeFileSync(filename, JSON.stringify(data));
+};
+
+Utils.storeDataCollection = function(appId, collectionName, data) {
+  let dirname = path.join(process.cwd(), appId, 'data');
+  let filename = path.join(dirname, collectionName + '.json');
+  this.mkdirp(filename);
+  fs.writeFileSync(filename, JSON.stringify(data));
+};
+
+Utils.storeJSON = function(filename, json) {
+  this.mkdirp(filename);
+  fs.writeFileSync(filename, JSON.stringify(json));
+};
+
+Utils.storeFile = function(filename, appId, fileBytes) {
+    let dirname = path.join(process.cwd(), appId, 'files');
+    let filepath = path.join(dirname, filename);
+    this.mkdirp(filepath);
+    fs.writeFileSync(filepath, fileBytes);
+}
+
+Utils.mkdirp = function(pathToFile) {
+  pathToFile.split(path.sep).slice().reduce(function(prev, curr, i) {
+    if (fs.existsSync(prev) === false) {
+      fs.mkdirSync(prev);
+    }
+    return prev + path.sep + curr;
+  });
+}
 
 module.exports = Utils;

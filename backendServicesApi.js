@@ -107,6 +107,56 @@ class BackendServicesApi {
         return utils.resolveAllPromises(promises);
     }
 
+  getFields(typeName) {
+    const headers = {};
+
+      const path = `/Types/${typeName}/Fields`;
+
+      return this.makeBSMetadataRequest('GET', path, headers)
+        .then((response) => {
+          return Promise.resolve(response);
+        })
+        .catch((fileFieldError) => {
+          return Promise.reject(fileFieldError);
+        });
+
+  }
+
+  getPermissions() {
+    const headers = {};
+    const path = `/Permissions`;
+    return this.makeBSMetadataRequest('GET', path, headers)
+      .then((response) => {
+        return Promise.resolve(response);
+      })
+      .catch((fileFieldError) => {
+        return Promise.reject(fileFieldError);
+      });
+  }
+
+  getEmailTemplates() {
+    const headers = {};
+    const path = `/EmailTemplates`;
+    return this.makeBSMetadataRequest('GET', path, headers)
+      .then((response) => {
+        return Promise.resolve(response);
+      })
+      .catch((fileFieldError) => {
+        return Promise.reject(fileFieldError);
+      });
+  }
+
+  getApplicationData() {
+    const headers = {};
+    const path = ``;
+    return this.makeBSMetadataRequest('GET', path, headers)
+      .then((response) => {
+        return Promise.resolve(response);
+      })
+      .catch((fileFieldError) => {
+        return Promise.reject(fileFieldError);
+      });
+  }
 
     getUsers() {
         let headers = {};
@@ -127,10 +177,7 @@ class BackendServicesApi {
         const dataStoreBS = Everlive.$.data(type.Name);
         return dataStoreBS.withHeaders(headers).get(query)
             .then((data) => {
-                return this._formatLocationField(type, data);
-            })
-            .then((data) => {
-                return this._formatFileFieldData(type, data);
+                return data.result;
             })
             .catch((queryError) => {
                 return Promise.reject(queryError);

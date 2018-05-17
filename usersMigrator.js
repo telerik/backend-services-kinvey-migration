@@ -1,6 +1,7 @@
 const Promise = require('bluebird');
 const async = require('async');
 const _ = require('underscore');
+const utils = require('./utils');
 
 class UserMigrator {
     constructor(bsApi, kinveyApi, logger, config) {
@@ -31,6 +32,8 @@ class UserMigrator {
         let copiedUsersCount = 0;
         let announcedItemsCount = 0;
 
+      let dataArray = [];
+
         return this.backendServicesApi.getItemsCount('Users')
             .then((usersCount) => {
                 this.logger.info('\nMigrating users...');
@@ -43,9 +46,9 @@ class UserMigrator {
                             this.backendServicesApi.readItemsFromBS(type, pageIndex * pageSize, pageSize)
                                 .then((users) => {
                                     fetchedUsersCount = users.length;
-                                    return Promise.map(users, (user) => {
-                                        return this.kinveyServiceApi.createUser(user, kinveyRoles, bsRoles);
-                                    }, {concurrency: this.config.max_parallel_requests});
+                                      users.forEach(function(item) {
+                                      dataArray.push(item);
+                                    });
                                 })
                                 .then(() => {
                                     cb()
@@ -72,6 +75,7 @@ class UserMigrator {
                             if (error) {
                                 reject(error);
                             } else {
+                                utils.storeDataCollection(self.config.bs_app_id, 'Users', dataArray);
                                 self.logger.info(`\tUser migration completed. Users migrated: ${copiedUsersCount}`);
                                 resolve();
                             }

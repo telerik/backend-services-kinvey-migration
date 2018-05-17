@@ -10,8 +10,9 @@ class ConfigurationMigrator {
     constructor(logger, config) {
         this.logger = logger;
         this.config = config;
-        this.kinveyServiceApi = new KinveyServiceApi(this.logger, this.config);
+
         this.backendServicesApi = new BackEndServicesApi(this.logger, this.config);
+        this.kinveyServiceApi = new KinveyServiceApi(this.logger, this.config);
     }
 
     migrateConfiguration() {
@@ -20,10 +21,16 @@ class ConfigurationMigrator {
                 return utils.checkConfiguration(this.logger, this.config);
             })
             .then(() => {
-                return this.kinveyServiceApi.checkManagementAuthorization();
+              return this.migrateApplicationData();
             })
             .then(() => {
                 return this.migrateTypes();
+            })
+            .then(() => {
+                return this.migratePermissions();
+            })
+            .then(() => {
+              return this.migrateEmailTemplates();
             })
             .then(() => {
                 return this.migrateRoles();
@@ -88,12 +95,22 @@ class ConfigurationMigrator {
     }
 
     migrateTypes() {
+        let self = this;
         this.logger.info('\nMigrating content types (collections)...');
+
         return this.backendServicesApi.getTypes()
             .then((response) => {
                 const contentTypes = response.Result;
                 this.logger.info(`\t${contentTypes.length} collection(s) found.`);
-                return this.kinveyServiceApi.createCollections(contentTypes);
+
+                utils.storeMetadataCollection(this.config.bs_app_id, 'Types', contentTypes);
+
+                return asyncp.eachSeries(
+                  contentTypes,
+                  function (contentType) {
+                    return self.migrateFields(contentType.Name);
+                  }
+                );
             })
             .then((result) => {
                 this.logger.info('\tContent types migrated successfully.');
@@ -103,13 +120,77 @@ class ConfigurationMigrator {
             });
     }
 
+    migrateFields(typeName) {
+      this.logger.info(`\nMigrating fields for type ${typeName}...`);
+      return this.backendServicesApi.getFields(typeName)
+        .then((response) => {
+          const fields = response.Result;
+          this.logger.info(`\t${fields.length} field(s) found.`);
+          utils.storeMetadataCollection(this.config.bs_app_id, typeName + '_Fields', fields);
+        })
+        .then((result) => {
+          this.logger.info('\tFields migrated successfully.');
+        })
+        .catch((migrateTypeError) => {
+          return Promise.reject(migrateTypeError);
+        });
+    }
+
+  migratePermissions() {
+    this.logger.info(`\nMigrating permissions...`);
+    return this.backendServicesApi.getPermissions()
+      .then((response) => {
+        const permissions = response.Result;
+        this.logger.info(`\t${permissions.length} permission record(s) found.`);
+        utils.storeMetadataCollection(this.config.bs_app_id, 'Permissions', permissions);
+      })
+      .then((result) => {
+        this.logger.info('\tPermissions migrated successfully.');
+      })
+      .catch((migrateTypeError) => {
+        return Promise.reject(migrateTypeError);
+      });
+  }
+
+  migrateApplicationData() {
+    this.logger.info(`\nMigrating application data...`);
+    return this.backendServicesApi.getApplicationData()
+      .then((response) => {
+        const appData = response.Result;
+        utils.storeMetadataCollection(this.config.bs_app_id, 'ApplicationData', appData);
+      })
+      .then((result) => {
+        this.logger.info('\Application data migrated successfully.');
+      })
+      .catch((migrateTypeError) => {
+        return Promise.reject(migrateTypeError);
+      });
+  }
+
+  migrateEmailTemplates() {
+    this.logger.info(`\nMigrating email templates...`);
+    return this.backendServicesApi.getEmailTemplates()
+      .then((response) => {
+        const permissions = response.Result;
+        this.logger.info(`\t${permissions.length} email template(s) found.`);
+        utils.storeMetadataCollection(this.config.bs_app_id, 'EmailTemplates', permissions);
+      })
+      .then((result) => {
+        this.logger.info('\Email templates migrated successfully.');
+      })
+      .catch((migrateTypeError) => {
+        return Promise.reject(migrateTypeError);
+      });
+  }
+
     migrateRoles() {
         this.logger.info('\nMigrating roles...');
         return this.backendServicesApi.getRoles()
             .then((rolesResponse) => {
                 const roles = rolesResponse.Result;
                 this.logger.info(`\t${roles.length} role(s) found.`);
-                return this.kinveyServiceApi.createRoles(roles);
+                utils.storeMetadataCollection(this.config.bs_app_id, 'Roles', rolesResponse.Result)
+                return Promise.resolve();
             })
             .then((result) => {
                 this.logger.info('\tRoles migrated successfully.');
@@ -161,7 +242,7 @@ class ConfigurationMigrator {
 
     _migrateTypeHooks(type) {
         let self = this;
-        const collectionName = utils.convertCollectionNameToKinvey(type.Name);
+        const collectionName = type.Name;
         this.logger.info('\tMigrating hooks for content type: ' + collectionName);
         return this.backendServicesApi.getCloudHookData(type.Id)
         .then((hooksCode) => {
@@ -170,16 +251,13 @@ class ConfigurationMigrator {
                 return Promise.resolve();
             }
 
-            let formattedHooksCode = self._formatHooksCode(hooksCode);
-            let hooksToCreate = self._getHooksToCreate(hooksCode);
-
-            return self.kinveyServiceApi._createCollectionHooks(collectionName, hooksToCreate, formattedHooksCode);
+            return utils.storeHook(this.config.bs_app_id, collectionName, hooksCode);
         })
         .then((result) => {
             this.logger.info('\t\tCloud hooks migrated successfully.');
         })
         .catch((err) => {
-            this.logger.info(`\t\tError migrating hooks for type '${collectionName}'. Error: ${error}`);
+            this.logger.info(`\t\tError migrating hooks for type '${collectionName}'. Error: ${err}`);
             Promise.resolve();
         });
     }
@@ -218,8 +296,7 @@ class ConfigurationMigrator {
     _formatEndpointsCode(endpointMeta, cloudFunctionData) {
         const formatedData = [];
         for (let i = 0; i < endpointMeta.length; i++) {
-            const customEndpointTemplate = this._renderDefaultEndpointTemplate().concat(`/*\n${cloudFunctionData[i]}\n*/`);
-            formatedData.push({ name: endpointMeta[i].Name, code: customEndpointTemplate });
+            formatedData.push({ name: endpointMeta[i].Name, code: cloudFunctionData });
         }
 
         return Promise.resolve(formatedData);
@@ -243,7 +320,6 @@ class ConfigurationMigrator {
          let activeCode = code.replace(formatHookCode, '').replace(/\/\/.*/g, '').trim();
          return activeCode;
      };
-
 
 }
 

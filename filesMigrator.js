@@ -1,5 +1,8 @@
 const async = require('async');
 
+const utils = require('./utils');
+const config = require('./config');
+
 class FilesMigrator {
     constructor(bsApi, kinveyApi, logger, config) {
         this.logger = logger;
@@ -21,6 +24,8 @@ class FilesMigrator {
                 let fetchedItemsCount;
                 let copiedItemsCount = 0;
 
+                let dataArray = [];
+
                 async.doUntil(
                     (callback) => {
                         async.waterfall([
@@ -31,7 +36,10 @@ class FilesMigrator {
                                 },
                                 (items, cb2) => {
                                     fetchedItemsCount = items.length;
-                                    self.kinveyApi.insertFilesInKinvey(items, cb2);
+                                    items.forEach(function(item) {
+                                      dataArray.push(item);
+                                    });
+                                    self.insertFilesInKinvey(items, cb2);
                                 }
                             ],
                             callback
@@ -51,6 +59,9 @@ class FilesMigrator {
                         if (err) {
                             reject(err);
                         } else {
+
+                            utils.storeDataCollection(self.config.bs_app_id, 'Files', dataArray);
+
                             self.logger.info(`\tMigration completed. Files copied: ${copiedItemsCount}`);
                             resolve();
                         }
@@ -61,6 +72,40 @@ class FilesMigrator {
 
 
     };
+
+  insertFilesInKinvey(items, done) {
+    const self = this;
+    async.each(
+      items,
+      (item, callback) => {
+
+        self.logger.info('\Downloading file: ' + item.Filename + ' (' + (item.Length / 1024) + ' KB)');
+
+        async.series([
+            (cb1) => {
+              const options = {
+                method: 'GET',
+                uri: item.Uri,
+                encoding: null
+              };
+
+              utils.makeRequest(options)
+                .then((fileBytes) => {
+                  utils.storeFile(item.Filename, config.bs_app_id, fileBytes);
+                  cb1();
+                })
+                .catch((getFilesError) => {
+                  cb1(getFilesError);
+                });
+            }
+          ],
+          callback
+        );
+
+      },
+      done
+    );
+  }
 
 }
 
