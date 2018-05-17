@@ -34,15 +34,15 @@ class DataMigrator {
                 typesMetaData = types.Result;
                 return this.backendServicesApi.getRoles();
             })
-//            .then(() => {
-//                return this._migrateTypes(typesMetaData, kinveyRoles, bsRoles);
-//            })
-//            .then(() => {
-//                return this.filesMigrator.migrateFiles();
-//            })
-//            .then(() => {
-//                return this.usersMigrator.migrateUsers(kinveyRoles, bsRoles);
-//            })
+            .then(() => {
+                return this._migrateTypes(typesMetaData, kinveyRoles, bsRoles);
+            })
+            .then(() => {
+                return this.filesMigrator.migrateFiles();
+            })
+            .then(() => {
+                return this.usersMigrator.migrateUsers(kinveyRoles, bsRoles);
+            })
             .then(() => {
               return this._migratePushDevices();
             })
